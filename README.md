@@ -55,3 +55,21 @@ log:157, AsyncLogger$1 (org.apache.logging.log4j.core.async)
 logMessage:130, AsyncLogger (org.apache.logging.log4j.core.async)
 main:26, App (example)
 ```
+
+## Recommendations
+
+Log4j needs to handle the case where an exception is thrown by `RingBufferLogEventTranslator#translateTo`.
+
+The Disruptor documentation makes it clear that once a slot is claimed in the ring buffer, the sequence _must_ be
+published. Otherwise the state of the Disruptor can be corrupted
+([source](https://lmax-exchange.github.io/disruptor/user-guide/index.html#_publishing_using_the_legacy_api)). That is
+why `RingBuffer#translateAndPublish` is designed the way it is, and why its usage is recommended over more manual
+methods.
+
+In order to handle such exceptions, then, it seems like the `EventHandler` must be responsible for checking that the
+event it is handling is sufficiently populated. Such an approach is also suggested by [this Disruptor GitHub issue
+discussion](https://github.com/LMAX-Exchange/disruptor/issues/244#issuecomment-437814712).
+
+## JIRA Issue
+
+[LOG4J2-2816](https://issues.apache.org/jira/browse/LOG4J2-2816)
